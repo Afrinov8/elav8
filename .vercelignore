@@ -1,0 +1,14 @@
+# Only the API needs to build on Vercel — everything else is the Expo app,
+# which is irrelevant to (and could confuse framework detection for) an
+# API-only deployment.
+app/
+assets/
+components/
+constants/
+hooks/
+lib/
+scripts/
+drizzle/
+.expo/
+android/
+ios/
