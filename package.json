@@ -8,6 +8,7 @@
     "dev:server": "cross-env NODE_ENV=development tsx watch server/index.ts",
     "dev:metro": "expo start",
     "tunnel": "concurrently -k -n server,metro -c blue,green \"npm:dev:server\" \"expo start --tunnel\"",
+    "phone": "concurrently -k -n server,metro -c blue,green \"npm:dev:server\" \"expo start --localhost\"",
     "start:server": "cross-env NODE_ENV=production tsx server/index.ts",
     "check": "tsc --noEmit",
     "lint": "expo lint",

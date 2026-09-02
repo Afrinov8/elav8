@@ -62,6 +62,11 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
+  // `eas init` fills this in (or set EAS_PROJECT_ID in .env) — required for
+  // EAS builds since this config is TypeScript, not app.json.
+  extra: process.env.EAS_PROJECT_ID
+    ? { eas: { projectId: process.env.EAS_PROJECT_ID } }
+    : undefined,
 };
 
 export default config;
