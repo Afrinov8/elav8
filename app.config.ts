@@ -3,7 +3,8 @@ import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
   name: "Elav8",
-  slug: "elav8-mobile",
+  slug: "elev8",
+  owner: "afrinov8i",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -62,11 +63,14 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
-  // `eas init` fills this in (or set EAS_PROJECT_ID in .env) — required for
-  // EAS builds since this config is TypeScript, not app.json.
-  extra: process.env.EAS_PROJECT_ID
-    ? { eas: { projectId: process.env.EAS_PROJECT_ID } }
-    : undefined,
+  // The EAS project auto-created for this repo (@afrinov8i/elev8) — `eas
+  // init` normally writes this, but can't in non-interactive builds, and
+  // can't write into a .ts config anyway, so it's pinned here directly.
+  extra: {
+    eas: {
+      projectId: "23cbda73-7244-4daa-a2d5-fb04f3f177a1",
+    },
+  },
 };
 
 export default config;
