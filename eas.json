@@ -17,7 +17,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DEPLOYED-API-URL"
+        "EXPO_PUBLIC_API_URL": "https://elav8.vercel.app"
       }
     },
     "production": {
@@ -25,7 +25,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DEPLOYED-API-URL"
+        "EXPO_PUBLIC_API_URL": "https://elav8.vercel.app"
       },
       "autoIncrement": true
     }
