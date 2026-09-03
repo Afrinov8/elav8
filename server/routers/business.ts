@@ -2,7 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { router, protectedProcedure } from "../trpc";
 import { db } from "../db";
-import { businesses, users } from "../schema";
+import { businesses, users, consents } from "../schema";
 
 export const businessRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -14,7 +14,6 @@ export const businessRouter = router({
   updatePrivacy: protectedProcedure
     .input(z.object({ smsConsent: z.boolean().optional(), dataSharing: z.boolean().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const { consents } = await import("../schema");
       const [row] = await db
         .update(consents)
         .set({ ...(input.smsConsent !== undefined && { smsConsent: input.smsConsent }), ...(input.dataSharing !== undefined && { dataSharing: input.dataSharing }) })
@@ -24,7 +23,6 @@ export const businessRouter = router({
     }),
 
   getPrivacy: protectedProcedure.query(async ({ ctx }) => {
-    const { consents } = await import("../schema");
     const row = await db.query.consents.findFirst({ where: eq(consents.userId, ctx.session.userId) });
     return row ?? { eula: true, acknowledgement: true, smsConsent: true, dataSharing: false };
   }),
