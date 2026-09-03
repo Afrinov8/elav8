@@ -87,7 +87,7 @@ accounts, not something this repo can do for you):
 1. **A permanent, public home for the API.** The dev server above only
    works while your machine is running it — an installed APK can't reach
    `localhost`. `server/app.ts` exports a plain Express app with no
-   platform-specific code, and `api/[...path].ts` + `vercel.json` are
+   platform-specific code, and `api/index.ts` + `vercel.json` are
    already set up for a zero-config Vercel deploy:
    - Go to vercel.com → New Project → import `Afrinov8/elav8`
    - Framework preset: **Other** (already forced via `vercel.json`)
@@ -119,6 +119,7 @@ app/(tabs)/         Home (Command Center), Inventory, Profile
 components/ui/      design-system primitives (Button, LedgerInput, Toggle, …)
 server/app.ts       Express app (platform-agnostic — used by both server/index.ts and api/)
 server/index.ts     local/Termux dev entrypoint (listens on :3000)
-api/[...path].ts    Vercel serverless entrypoint (same Express app)
+api/index.ts        Vercel serverless entrypoint (same Express app; vercel.json
+                    rewrites all of /api/* here so nested tRPC paths resolve)
 constants/theme.ts  brand color/type tokens (see design.md)
 ```

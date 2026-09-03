@@ -1,4 +1,4 @@
-// Local/Termux dev entrypoint — listens on PORT. On Vercel, api/[...path].ts
+// Local/Termux dev entrypoint — listens on PORT. On Vercel, api/index.ts
 // imports the same `app` and Vercel's Node runtime handles listening.
 import { app } from "./app";
 
