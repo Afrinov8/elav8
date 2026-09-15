@@ -1,119 +1,164 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { SkylineBackground } from "@/components/skyline-background";
-import { LedgerInput } from "@/components/ui/ledger-input";
+import { ScreenContainer } from "@/components/screen-container";
 import { Button } from "@/components/ui/button";
-import { palette } from "@/constants/theme";
+import { FieldWell } from "@/components/ui/field-well";
+import { GhostAction } from "@/components/ui/ghost-action";
+import { RaisedCard } from "@/components/ui/raised-card";
+import { SegmentedRail } from "@/components/ui/segmented-rail";
+import { SignalPill } from "@/components/ui/signal-pill";
+import { formatPhone, fontFamily, layout, palette, type } from "@/constants/theme";
+import { useHaptics } from "@/lib/haptics";
 import { trpc } from "@/lib/trpc";
 import { useSession } from "@/lib/auth-context";
 
+type AuthMode = "login" | "register";
+
 export default function LoginScreen() {
+  const [mode, setMode] = useState<AuthMode>("login");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | undefined>();
+
   const { setSession } = useSession();
+  const haptics = useHaptics();
   const login = trpc.auth.login.useMutation();
 
   const onSubmit = async () => {
-    if (!identifier.trim() || !password) return;
+    if (!identifier.trim() || !password) {
+      haptics.rigid();
+      setError("Enter your phone number or email and your password.");
+      return;
+    }
+    setError(undefined);
     try {
       const result = await login.mutateAsync({ identifier: identifier.trim(), password });
-      await setSession(result.token, result.user, (result.business as any) ?? null);
+      await setSession(result.token, result.user, (result.business as never) ?? null);
       router.replace("/(tabs)");
-    } catch {
-      // error surfaced via login.error below
+    } catch (cause) {
+      haptics.rigid();
+      setError(cause instanceof Error ? cause.message : "We couldn't sign you in. Please try again.");
     }
   };
 
+  const preview = identifier.trim().length > 6 ? formatPhone(identifier) : undefined;
+
   return (
-    <SkylineBackground>
-      <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <View style={styles.brandRow}>
-              <Text style={styles.brand}>Elav8</Text>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>3-day trial</Text>
-              </View>
+    <ScreenContainer padded={false}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.topBar}>
+            <Text style={styles.wordmark}>Elav8</Text>
+            <SignalPill label="3-day trial" tone="ochre" />
+          </View>
+
+          <View style={styles.heading}>
+            <Text style={styles.greeting}>Welcome back.</Text>
+            <Text style={styles.sub}>
+              {mode === "login"
+                ? "Sign in to your Command Center."
+                : "Set up a business account — it takes a few minutes."}
+            </Text>
+          </View>
+
+          <SegmentedRail
+            value={mode}
+            onChange={setMode}
+            options={[
+              { label: "Log In", value: "login" },
+              { label: "Register", value: "register" },
+            ]}
+          />
+
+          {mode === "login" ? (
+            <View style={styles.form}>
+              <FieldWell
+                label="Phone or email"
+                placeholder="+27 82 123 4567"
+                value={identifier}
+                onChangeText={setIdentifier}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                helper={preview}
+              />
+              <FieldWell
+                label="Password"
+                placeholder="Your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+
+              {error ? (
+                <RaisedCard style={styles.errorCard}>
+                  <Text style={styles.errorText}>⚑ {error}</Text>
+                </RaisedCard>
+              ) : null}
             </View>
+          ) : (
+            <RaisedCard style={styles.registerCard}>
+              <Text style={styles.registerTitle}>New here?</Text>
+              <Text style={styles.registerBody}>
+                Registration walks through your details, your industry, what you sell, and consent — then verifies your
+                number.
+              </Text>
+              <Text style={styles.registerNote}>R10 a day once your trial ends. Weekends are free.</Text>
+            </RaisedCard>
+          )}
+        </ScrollView>
 
-            <View style={styles.spacer} />
-
-            <View style={styles.card}>
-              <Text style={styles.title}>Welcome back.</Text>
-              <Text style={styles.subtitle}>Log in to your Command Center.</Text>
-
-              <View style={styles.form}>
-                <LedgerInput
-                  label="Phone Number or Email"
-                  placeholder="you@example.com"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-                <LedgerInput
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  error={login.error?.message}
-                />
-                <Pressable onPress={() => {}}>
-                  <Text style={styles.link}>Forgot Password?</Text>
-                </Pressable>
-              </View>
-
+        <View style={styles.footer}>
+          {mode === "login" ? (
+            <>
               <Button label="Log In" onPress={onSubmit} loading={login.isPending} />
-
-              <Pressable onPress={() => router.push("/(auth)/welcome")} style={styles.bottomLink}>
-                <Text style={styles.mutedText}>
-                  New here? <Text style={styles.link}>Create a Business Account</Text>
-                </Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </SkylineBackground>
+              <GhostAction label="Forgot password?" onPress={() => router.push("/(auth)/recover")} />
+            </>
+          ) : (
+            <>
+              <Button label="Create a Business Account" onPress={() => router.push("/onboarding")} />
+              <GhostAction label="Back to Log In" onPress={() => setMode("login")} />
+            </>
+          )}
+          <Text style={styles.trust}>Private by design — your data stays with your business.</Text>
+        </View>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safe: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: "flex-end", padding: 24, paddingBottom: 28 },
-  brandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  brand: { color: palette.white, fontSize: 22, fontFamily: "Fraunces_700Bold", letterSpacing: -0.5 },
-  pill: { backgroundColor: "rgba(247,241,231,0.16)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
-  pillText: { color: palette.white, fontSize: 12, fontFamily: "SpaceGrotesk_500Medium" },
-  spacer: { flex: 1, minHeight: 40 },
-  card: {
-    backgroundColor: "rgba(255,253,249,0.94)",
-    borderRadius: 16,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: "rgba(217,204,184,0.6)",
-    gap: 4,
+  scroll: {
+    flexGrow: 1,
+    gap: layout.gutter,
+    paddingHorizontal: layout.screen,
+    paddingTop: layout.base * 2,
+    paddingBottom: layout.base * 2,
+    width: "100%",
+    maxWidth: layout.maxWidth,
+    alignSelf: "center",
   },
-  title: { fontFamily: "Fraunces_700Bold", fontSize: 24, color: palette.ink },
-  subtitle: { fontFamily: "SpaceGrotesk_400Regular", fontSize: 15, color: palette.mutedInk, marginBottom: 12 },
-  form: { gap: 2, marginTop: 4 },
-  link: { color: palette.teal, fontFamily: "SpaceGrotesk_500Medium", fontSize: 14 },
-  mutedText: { color: palette.mutedInk, fontFamily: "SpaceGrotesk_400Regular", fontSize: 14 },
-  bottomLink: { alignItems: "center", marginTop: 16 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  wordmark: { ...type.wordmark, fontFamily: fontFamily.display, color: palette.ink },
+  heading: { gap: 8 },
+  greeting: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, color: palette.ink },
+  sub: { ...type.body, color: palette.mutedInk },
+  form: { gap: 16 },
+  errorCard: { padding: 14 },
+  errorText: { ...type.helper, color: palette.burgundy },
+  registerCard: { gap: 10 },
+  registerTitle: { ...type.title, fontSize: 18, lineHeight: 24, color: palette.ink },
+  registerBody: { ...type.body, color: palette.mutedInk },
+  registerNote: { ...type.helper, color: palette.mutedInk },
+  footer: {
+    gap: 8,
+    paddingHorizontal: layout.screen,
+    paddingBottom: layout.safeBottom,
+    width: "100%",
+    maxWidth: layout.maxWidth,
+    alignSelf: "center",
+  },
+  trust: { ...type.helper, color: palette.mutedInk, textAlign: "center", marginTop: 4 },
 });

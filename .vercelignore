@@ -1,14 +1,11 @@
-# Only the API needs to build on Vercel — everything else is the Expo app,
-# which is irrelevant to (and could confuse framework detection for) an
-# API-only deployment.
-app/
-assets/
-components/
-constants/
-hooks/
-lib/
-scripts/
-drizzle/
+# Only local build output and generated/native folders are excluded. The app
+# itself (app/, components/, lib/, constants/, assets/) must be uploaded: the
+# frontend is exported to dist/ by `npm run build`, and the API runs from the
+# api/ serverless function.
 .expo/
+dist/
+web-build/
 android/
 ios/
+node_modules/
+.vercel/

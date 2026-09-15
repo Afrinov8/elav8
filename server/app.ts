@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./load-env"; // must precede db/config imports so DATABASE_URL is loaded from .env/.env.local
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";

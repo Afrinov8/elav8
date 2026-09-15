@@ -1,17 +1,15 @@
 import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
-import { palette } from "@/constants/theme";
+
+import { SkylineSplash, useSplashGate } from "@/components/skyline-splash";
+import { motion } from "@/constants/theme";
 import { useSession } from "@/lib/auth-context";
 
 export default function AuthLayout() {
   const { status } = useSession();
+  const showSplash = useSplashGate(status !== "loading");
 
-  if (status === "loading") {
-    return (
-      <View style={{ flex: 1, backgroundColor: palette.paper, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={palette.ochre} />
-      </View>
-    );
+  if (status === "loading" || showSplash) {
+    return <SkylineSplash />;
   }
 
   if (status === "authenticated") {
@@ -19,10 +17,15 @@ export default function AuthLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "fade",
+        animationDuration: motion.fadeThrough,
+      }}
+    >
       <Stack.Screen name="login" />
-      <Stack.Screen name="welcome" />
-      <Stack.Screen name="signup" />
+      <Stack.Screen name="recover" />
     </Stack>
   );
 }

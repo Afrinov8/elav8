@@ -1,21 +1,38 @@
 import { Pressable, StyleSheet } from "react-native";
 import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { palette } from "@/constants/theme";
 
-export function Toggle({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
+import { motion, palette } from "@/constants/theme";
+import { useHaptics } from "@/lib/haptics";
+
+export function Toggle({
+  value,
+  onValueChange,
+  disabled = false,
+}: {
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  const haptics = useHaptics();
+
   const trackStyle = useAnimatedStyle(() => ({
-    backgroundColor: withTiming(value ? palette.teal : palette.sandLine, { duration: 200 }),
+    backgroundColor: withTiming(value ? palette.teal : palette.sandLine, { duration: motion.fadeThrough }),
   }));
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: withTiming(value ? 20 : 2, { duration: 200 }) }],
+    transform: [{ translateX: withTiming(value ? 22 : 2, { duration: motion.fadeThrough }) }],
   }));
 
   return (
     <Pressable
-      onPress={() => onValueChange(!value)}
+      onPress={() => {
+        if (disabled) return;
+        haptics.selection();
+        onValueChange(!value);
+      }}
       accessibilityRole="switch"
-      accessibilityState={{ checked: value }}
-      hitSlop={8}
+      accessibilityState={{ checked: value, disabled }}
+      hitSlop={12}
+      style={disabled ? styles.disabled : undefined}
     >
       <Animated.View style={[styles.track, trackStyle]}>
         <Animated.View style={[styles.thumb, thumbStyle]} />
@@ -25,6 +42,7 @@ export function Toggle({ value, onValueChange }: { value: boolean; onValueChange
 }
 
 const styles = StyleSheet.create({
-  track: { width: 44, height: 24, borderRadius: 12, justifyContent: "center", padding: 2 },
-  thumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: palette.white, position: "absolute" },
+  track: { width: 48, height: 28, borderRadius: 999, justifyContent: "center", padding: 2 },
+  thumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: palette.paperRaised, position: "absolute" },
+  disabled: { opacity: 0.4 },
 });

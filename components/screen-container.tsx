@@ -1,68 +1,56 @@
-import { View, type ViewProps } from "react-native";
+import { StyleSheet, View, type ViewProps } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
+import { layout, palette } from "@/constants/theme";
 import { cn } from "@/lib/utils";
 
 export interface ScreenContainerProps extends ViewProps {
   /**
-   * SafeArea edges to apply. Defaults to ["top", "left", "right"].
-   * Bottom is typically handled by Tab Bar.
+   * Base surface. A screen never mixes both: onboarding, forms, Inventory and
+   * Profile live on Paper; Skyline Splash, Verification and Command Center
+   * live on Deep Ledger (design.md → surface pairing rules).
    */
+  tone?: "paper" | "deep";
+  /** SafeArea edges to apply. Bottom is handled by the Quiet Tab Bar. */
   edges?: Edge[];
-  /**
-   * Tailwind className for the content area.
-   */
   className?: string;
-  /**
-   * Additional className for the outer container (background layer).
-   */
   containerClassName?: string;
-  /**
-   * Additional className for the SafeAreaView (content layer).
-   */
   safeAreaClassName?: string;
+  /** Horizontal padding. Defaults to the 24dp gutter rhythm. */
+  padded?: boolean;
 }
 
-/**
- * A container component that properly handles SafeArea and background colors.
- *
- * The outer View extends to full screen (including status bar area) with the background color,
- * while the inner SafeAreaView ensures content is within safe bounds.
- *
- * Usage:
- * ```tsx
- * <ScreenContainer className="p-4">
- *   <Text className="text-2xl font-bold text-foreground">
- *     Welcome
- *   </Text>
- * </ScreenContainer>
- * ```
- */
 export function ScreenContainer({
+  tone = "paper",
   children,
   edges = ["top", "left", "right"],
   className,
   containerClassName,
   safeAreaClassName,
+  padded = true,
   style,
   ...props
 }: ScreenContainerProps) {
+  const deep = tone === "deep";
   return (
     <View
-      className={cn(
-        "flex-1",
-        "bg-background",
-        containerClassName
-      )}
+      className={cn("flex-1", containerClassName)}
+      style={{ backgroundColor: deep ? palette.deepLedger : palette.paper }}
       {...props}
     >
+      <StatusBar style={deep ? "light" : "dark"} />
       <SafeAreaView
         edges={edges}
         className={cn("flex-1", safeAreaClassName)}
-        style={style}
+        style={[styles.content, padded && { paddingHorizontal: layout.screen }, style]}
       >
         <View className={cn("flex-1", className)}>{children}</View>
       </SafeAreaView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  content: { flex: 1, width: "100%", maxWidth: layout.maxWidth, alignSelf: "center" },
+});

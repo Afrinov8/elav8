@@ -78,6 +78,45 @@ addons (`lightningcss`, `rollup`, an eslint resolver) that may not have
 prebuilt Android/Termux binaries — that's fine, neither is needed to run the
 app itself, only for linting/testing.
 
+## Deploying the web app (Vercel)
+
+One Vercel project serves both halves of the product:
+
+- **Frontend** — `npm run build` runs `expo export --platform web`, writing a
+  static site to `dist/`. Expo Router emits one HTML file per route, so deep
+  links work without a SPA fallback.
+- **API** — `api/index.ts` is the serverless entrypoint; it re-exports the
+  same Express app as `server/app.ts`. The standalone listener in
+  `server/index.ts` is a local-dev/Termux concern only and never runs in
+  production.
+
+`vercel.json` wires that together: `framework: null`, `buildCommand: npm run
+build`, `outputDirectory: dist`, plus a rewrite sending every `/api/*`
+request to the `api/` function so nested tRPC paths like
+`/api/trpc/auth.login` resolve.
+
+The deployed frontend calls the API on its own origin — `constants/api.ts`
+returns a relative base for production web builds — so no API hostname is
+baked into the bundle and CORS stays out of the way.
+
+```bash
+npm run build   # same build Vercel runs; output lands in dist/
+```
+
+To deploy:
+
+1. vercel.com → New Project → import `Afrinov8/elav8`
+2. Framework preset: **Other** (already forced via `vercel.json`)
+3. Add environment variables `DATABASE_URL` (your Neon connection string)
+   and `JWT_SECRET` (`openssl rand -hex 32`, different from your local one
+   is fine)
+4. Deploy → you'll get a URL like `https://elav8.vercel.app`; verify both
+   halves:
+   ```bash
+   curl https://elav8.vercel.app/api/health   # {"ok":true,...}
+   curl -I https://elav8.vercel.app/login     # 200
+   ```
+
 ## Building a real installable APK (EAS)
 
 For an app that works without Termux running and without Expo Go, build a
@@ -86,18 +125,11 @@ accounts, not something this repo can do for you):
 
 1. **A permanent, public home for the API.** The dev server above only
    works while your machine is running it — an installed APK can't reach
-   `localhost`. `server/app.ts` exports a plain Express app with no
-   platform-specific code, and `api/index.ts` + `vercel.json` are
-   already set up for a zero-config Vercel deploy:
-   - Go to vercel.com → New Project → import `Afrinov8/elav8`
-   - Framework preset: **Other** (already forced via `vercel.json`)
-   - Add environment variables `DATABASE_URL` (your Neon connection string)
-     and `JWT_SECRET` (`openssl rand -hex 32`, different from your local one
-     is fine)
-   - Deploy → you'll get a URL like `https://elav8.vercel.app`; verify with
-     `curl https://elav8.vercel.app/api/health`
-   - Put that URL in `eas.json`'s `preview`/`production` profiles (replacing
-     `EXPO_PUBLIC_API_URL`'s placeholder) and push
+   `localhost`. Deploy the Vercel project as described in *Deploying the web
+   app* above, then put its URL (`https://elav8.vercel.app`) in `eas.json`'s
+   `preview`/`production` profiles — replacing `EXPO_PUBLIC_API_URL`'s
+   placeholder — and push. Native builds can't derive the API host the way
+   the web build can, so this variable is required there.
 
 2. **An Expo account**, since EAS builds run under your account, not this
    repo's:
@@ -118,8 +150,12 @@ app/(auth)/        login, welcome, signup — unauthenticated routes
 app/(tabs)/         Home (Command Center), Inventory, Profile
 components/ui/      design-system primitives (Button, LedgerInput, Toggle, …)
 server/app.ts       Express app (platform-agnostic — used by both server/index.ts and api/)
-server/index.ts     local/Termux dev entrypoint (listens on :3000)
+server/index.ts     local/Termux dev entrypoint (listens on :3000) — never
+                    started in production
 api/index.ts        Vercel serverless entrypoint (same Express app; vercel.json
                     rewrites all of /api/* here so nested tRPC paths resolve)
+constants/api.ts    resolves the API base URL (relative on deployed web,
+                    EXPO_PUBLIC_API_URL on native)
 constants/theme.ts  brand color/type tokens (see design.md)
+vercel.json         static frontend (dist/) + api/ function deploy config
 ```
